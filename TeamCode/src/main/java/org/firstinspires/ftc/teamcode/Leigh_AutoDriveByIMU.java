@@ -107,8 +107,8 @@ public class Leigh_AutoDriveByIMU extends LinearOpMode {
 
     // These constants define the desired driving/control characteristics
     // The can/should be tweaked to suite the specific robot drive train.
-    static final double     DRIVE_SPEED             = 0.1; //0.35; //0.7;     // Nominal speed for better accuracy.
-    static final double     TURN_SPEED              = 0.05; //0.25; // .5;     // Nominal half speed for better accuracy.
+    static final double     DRIVE_SPEED             = 0.2; //0.35; //0.7;     // Nominal speed for better accuracy.
+    static final double     TURN_SPEED              = 0.1; //0.25; // .5;     // Nominal half speed for better accuracy.
 
 
     static final double     HEADING_THRESHOLD       = 1 ;      // As tight as we can make it with an integer gyro
@@ -163,6 +163,9 @@ public class Leigh_AutoDriveByIMU extends LinearOpMode {
         robot.leftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         robot.rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        robot.leftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.rightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
         // Wait for the game to start (Display Gyro value), and reset gyro before we move..
         while (!isStarted()) {
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -194,7 +197,17 @@ public class Leigh_AutoDriveByIMU extends LinearOpMode {
         sleep(2000);
 
 
-        gyroDrive(DRIVE_SPEED,-48.0, 0.0);    // Drive REV 48 inches
+        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 48 inches
+        sleep(2000);
+        gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
+        sleep(2000);
+        gyroDrive(DRIVE_SPEED, -12.0, -45.0);  // Drive FWD 12 inches at 45 degrees
+        sleep(2000);
+        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
+        sleep(2000);
+        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 48 inches
+        sleep(2000);
+
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
