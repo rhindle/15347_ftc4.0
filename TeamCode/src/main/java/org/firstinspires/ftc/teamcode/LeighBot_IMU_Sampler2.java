@@ -40,20 +40,16 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Color;
 
-import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcontroller.external.samples.HardwarePushbot;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.HardwareLeighBot;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
 import java.util.Locale;
@@ -92,9 +88,9 @@ import java.util.Locale;
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
 
-@Autonomous(name="Leighbot: IMU, sampler", group="Test")
+@Autonomous(name="Leighbot: 2 IMU, sampler", group="Test")
 //@Disabled
-public class LeighBot_IMU_Sampler extends LinearOpMode {
+public class LeighBot_IMU_Sampler2 extends LinearOpMode {
 
     /* Declare OpMode members. */
     HardwareLeighBot         robot   = new HardwareLeighBot();   // Use a Pushbot's hardware
@@ -109,9 +105,9 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
     // These constants define the desired driving/control characteristics
     // The can/should be tweaked to suite the specific robot drive train.
     static final double     DRIVE_SPEED             = 0.2; //0.35; //0.7;     // Nominal speed for better accuracy.
-    static final double     TURN_SPEED              = 0.1; //0.25; // .5;     // Nominal half speed for better accuracy.
+    static final double     TURN_SPEED              = 0.2; //0.25; // .5;     // Nominal half speed for better accuracy.
 
-    static final double     HEADING_THRESHOLD       = 1 ;      // As tight as we can make it with an integer gyro
+    static final double     HEADING_THRESHOLD       = 0.2; //1 ;      // As tight as we can make it with an integer gyro
                                                                // LK: Above was required with MR gyro, but I did
                                                                //     not test with smaller values with IMU
     static final double     P_TURN_COEFF            = 0.1;     // Larger is more responsive, but also less stable
@@ -122,6 +118,8 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
     Orientation angles;
 
     boolean exitFlag, testForMinerals;
+    int testForMineralsCounter;
+    int testForMineralsCounterMax;
 
     @Override
     public void runOpMode() {
@@ -133,6 +131,10 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
         // sometimes it helps to multiply the raw RGB values with a scale factor
         // to amplify/attentuate the measured values.
         final double SCALE_FACTOR = 255;
+
+        int saveRightPos;
+        double netMovement;
+        double sampleHeading;
 
         /*
          * Initialize the standard drive system variables.
@@ -175,8 +177,8 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
         robot.rightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         // LK: The following help with inaccuracy in my test robot; not present in original gyro code
-//        robot.leftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-//        robot.rightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.leftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        robot.rightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         // Wait for the game to start (Display Gyro value), and reset gyro before we move..
         while (!isStarted()) {
@@ -186,39 +188,88 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
             sleep(100);
         }
 
+        testForMinerals = false;
+        exitFlag = false;
+        gyroDrive(DRIVE_SPEED, 21, 0);
+        gyroTurn( TURN_SPEED,  90);
+        gyroDrive(DRIVE_SPEED, -14, 90);  // was 9, but I measured wrong!
+//        sleep(5000);
+
         robot.samplerArm.setPosition(robot.SAMPLER_READ);
 
-        while (opModeIsActive()) {
-            // convert the RGB values to HSV values.
-            // multiply by the SCALE_FACTOR.
-            // then cast it back to int (SCALE_FACTOR is a double)
-            Color.RGBToHSV((int) (robot.sensorColor.red() * SCALE_FACTOR),
-                    (int) (robot.sensorColor.green() * SCALE_FACTOR),
-                    (int) (robot.sensorColor.blue() * SCALE_FACTOR),
-                    hsvValues);
+//        while (opModeIsActive()) {
+//            // convert the RGB values to HSV values.
+//            // multiply by the SCALE_FACTOR.
+//            // then cast it back to int (SCALE_FACTOR is a double)
+//            Color.RGBToHSV((int) (robot.sensorColor.red() * SCALE_FACTOR),
+//                    (int) (robot.sensorColor.green() * SCALE_FACTOR),
+//                    (int) (robot.sensorColor.blue() * SCALE_FACTOR),
+//                    hsvValues);
+//
+//            // send the info back to driver station using telemetry function.
+//            telemetry.addData("Distance (cm)",
+//                    String.format(Locale.US, "%.02f", robot.sensorDistance.getDistance(DistanceUnit.CM)));
+//            telemetry.addData("Alpha", robot.sensorColor.alpha());
+//            telemetry.addData("Red  ", robot.sensorColor.red());
+//            telemetry.addData("Green", robot.sensorColor.green());
+//            telemetry.addData("Blue ", robot.sensorColor.blue());
+//            telemetry.addData("Hue", hsvValues[0]);
+//
+//            if (robot.sensorDistance.getDistance(DistanceUnit.CM) < 10 && hsvValues[0] < 50) {
+//                telemetry.addData(">", "Candidate Found!");
+//            } else {
+//                telemetry.addData(">", "no match");
+//            }
+//
+//            telemetry.update();
+//
+//            sleep(50);
+//            idle();
+//        }
 
-            // send the info back to driver station using telemetry function.
-            telemetry.addData("Distance (cm)",
-                    String.format(Locale.US, "%.02f", robot.sensorDistance.getDistance(DistanceUnit.CM)));
-            telemetry.addData("Alpha", robot.sensorColor.alpha());
-            telemetry.addData("Red  ", robot.sensorColor.red());
-            telemetry.addData("Green", robot.sensorColor.green());
-            telemetry.addData("Blue ", robot.sensorColor.blue());
-            telemetry.addData("Hue", hsvValues[0]);
+//       while (opModeIsActive()) {
+//           testForMinerals=findMineral();
+//           telemetry.update();
+//          sleep(50);
+//           idle();
+//       }
 
-            if (robot.sensorDistance.getDistance(DistanceUnit.CM) < 10 && hsvValues[0] < 50) {
-                telemetry.addData(">", "Candidate Found!");
-            } else {
-                telemetry.addData(">", "no match");
-            }
+        //robot.samplerArm.setPosition(robot.SAMPLER_UP);
+        testForMinerals = true;
+        testForMineralsCounter = 0;
+        exitFlag = false;
+        saveRightPos = robot.rightDrive.getCurrentPosition();
+//        moveCounts = (int)(distance * robot.COUNTS_PER_INCH);
+//        newLeftTarget = robot.leftDrive.getCurrentPosition() + moveCounts;
+//        newRightTarget = robot.rightDrive.getCurrentPosition() + moveCounts;
+        // 26 inches at 0 deg
 
+        robot.samplerArm.setPosition(robot.SAMPLER_READ);
+        sleep(100);
+
+        sampleHeading=89.0; //90.0;  //90 in auto, 0 when testing just that part.
+        gyroDrive(DRIVE_SPEED*.65, 40.0, sampleHeading);    // Drive FWD [31+4+4] inches //0.13
+        testForMinerals = false;
+
+        if (exitFlag) {
+            exitFlag = false;
+            gyroDrive(DRIVE_SPEED*.75, -4, sampleHeading);  //0.15
+            robot.samplerArm.setPosition(robot.SAMPLER_PUSH);
+            gyroDrive(DRIVE_SPEED, 6, sampleHeading);  //0.2
+            robot.samplerArm.setPosition(robot.SAMPLER_UP);
+            netMovement=(robot.rightDrive.getCurrentPosition()-saveRightPos)/robot.COUNTS_PER_INCH;
+            telemetry.addData("Distance", "%2.1f", netMovement);
             telemetry.update();
-
-            sleep(50);
-            idle();
+            gyroDrive(DRIVE_SPEED, 40.0-netMovement, sampleHeading);  //0.2
         }
 
-        robot.samplerArm.setPosition(robot.SAMPLER_UP);
+        robot.samplerArm.setPosition(robot.SAMPLER_UP);  // if we missed the mineral raise the arm
+        //sleep(2000);
+
+        gyroTurn( 0.25,  120);
+        gyroDrive(0.75, 55, 120);
+        gyroTurn( 0.25,  135);
+        gyroDrive(1, -75, 135);
 
         // LK: This fuctionality not provided with the IMU code
 //        gyro.resetZAxisIntegrator();
@@ -229,39 +280,94 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
         // LK: The CW/CCW notation is opposite my interpretation; angles are correct.
         //     In testing, pausing between motions is helpful to observer what's going on,
         //     so I added sleep statements.
-        gyroDrive(DRIVE_SPEED, 48.0, 0.0);    // Drive FWD 48 inches
-        sleep(2000);
-        gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
-        sleep(2000);
-        gyroHold( TURN_SPEED, -45.0, 0.5);    // Hold -45 Deg heading for a 1/2 second
-        sleep(2000);
-        gyroDrive(DRIVE_SPEED, 12.0, -45.0);  // Drive FWD 12 inches at 45 degrees
-        sleep(2000);
-        gyroTurn( TURN_SPEED,  45.0);         // Turn  CW  to  45 Degrees
-        sleep(2000);
-        gyroHold( TURN_SPEED,  45.0, 0.5);    // Hold  45 Deg heading for a 1/2 second
-        sleep(2000);
-        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
-        sleep(2000);
-        gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
-        sleep(2000);
-
-        // LK: I changed the remaining steps so it would return to original position
-        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 24 inches
-        sleep(2000);
-        gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
-        sleep(2000);
-        gyroDrive(DRIVE_SPEED, -12.0, -45.0);  // Drive REV 12 inches at 45 degrees
-        sleep(2000);
-        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
-        sleep(2000);
-        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 24 inches
-        sleep(2000);
+//        gyroDrive(DRIVE_SPEED, 48.0, 0.0);    // Drive FWD 48 inches
+//        sleep(2000);
+//        gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
+//        sleep(2000);
+//        gyroHold( TURN_SPEED, -45.0, 0.5);    // Hold -45 Deg heading for a 1/2 second
+//        sleep(2000);
+//        gyroDrive(DRIVE_SPEED, 12.0, -45.0);  // Drive FWD 12 inches at 45 degrees
+//        sleep(2000);
+//        gyroTurn( TURN_SPEED,  45.0);         // Turn  CW  to  45 Degrees
+//        sleep(2000);
+//        gyroHold( TURN_SPEED,  45.0, 0.5);    // Hold  45 Deg heading for a 1/2 second
+//        sleep(2000);
+//        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
+//        sleep(2000);
+//        gyroHold( TURN_SPEED,   0.0, 1.0);    // Hold  0 Deg heading for a 1 second
+//        sleep(2000);
+//
+//        // LK: I changed the remaining steps so it would return to original position
+//        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 24 inches
+//        sleep(2000);
+//        gyroTurn( TURN_SPEED, -45.0);         // Turn  CCW to -45 Degrees
+//        sleep(2000);
+//        gyroDrive(DRIVE_SPEED, -12.0, -45.0);  // Drive REV 12 inches at 45 degrees
+//        sleep(2000);
+//        gyroTurn( TURN_SPEED,   0.0);         // Turn  CW  to   0 Degrees
+//        sleep(2000);
+//        gyroDrive(DRIVE_SPEED,-24.0, 0.0);    // Drive REV 24 inches
+//        sleep(2000);
 
         telemetry.addData("Path", "Complete");
         telemetry.update();
     }
 
+
+    boolean findMineral () {
+        boolean foundGold = false;
+        // hsvValues is an array that will hold the hue, saturation, and value information.
+        float hsvValues[] = {0F, 0F, 0F};
+        // values is a reference to the hsvValues array.
+        final float values[] = hsvValues;
+        // sometimes it helps to multiply the raw RGB values with a scale factor
+        // to amplify/attentuate the measured values.
+        final double SCALE_FACTOR = 255;
+
+        // convert the RGB values to HSV values.
+        // multiply by the SCALE_FACTOR.
+        // then cast it back to int (SCALE_FACTOR is a double)
+        Color.RGBToHSV((int) (robot.sensorColor.red() * SCALE_FACTOR),
+                (int) (robot.sensorColor.green() * SCALE_FACTOR),
+                (int) (robot.sensorColor.blue() * SCALE_FACTOR),
+                hsvValues);
+
+        // send the info back to driver station using telemetry function.
+        telemetry.addData("Distance (cm)",
+                String.format(Locale.US, "%.02f", robot.sensorDistance.getDistance(DistanceUnit.CM)));
+//        telemetry.addData("Alpha", robot.sensorColor.alpha());
+//        telemetry.addData("Red  ", robot.sensorColor.red());
+//        telemetry.addData("Green", robot.sensorColor.green());
+//        telemetry.addData("Blue ", robot.sensorColor.blue());
+        telemetry.addData("Hue", hsvValues[0]);
+
+        if (robot.sensorDistance.getDistance(DistanceUnit.CM) < 10 && hsvValues[0] < 50) {
+            telemetry.addData(">", "Candidate Found!");
+            testForMineralsCounter++;
+            //foundGold = true;
+        } else {
+            telemetry.addData(">", "no match");
+            testForMineralsCounter--;
+        }
+
+        if (testForMineralsCounter<0) {
+            testForMineralsCounter=0;
+        }
+        if (testForMineralsCounter > testForMineralsCounterMax) {
+            testForMineralsCounterMax = testForMineralsCounter;
+        }
+        telemetry.addData("MnlCount",testForMineralsCounter);
+        telemetry.addData("MaxCount",testForMineralsCounterMax);
+        if (testForMineralsCounter>2) {
+            foundGold=true;
+        }
+//        telemetry.update();
+//
+//        sleep(50);
+//        idle();
+
+        return foundGold;
+    }
 
    /**
     *  Method to drive on a fixed compass bearing (angle), based on encoder counts.
@@ -309,8 +415,12 @@ public class LeighBot_IMU_Sampler extends LinearOpMode {
             robot.rightDrive.setPower(speed);
 
             // keep looping while we are still active, and BOTH motors are running.
-            while (opModeIsActive() &&
+            while (opModeIsActive() && (!exitFlag) &&
                     (robot.leftDrive.isBusy() && robot.rightDrive.isBusy())) {
+
+                if (testForMinerals) {
+                    exitFlag=findMineral();
+                }
 
                 // adjust relative speed based on heading error.
                 error = getError(angle);
