@@ -1,5 +1,6 @@
-package org.firstinspires.ftc.teamcode; //    this is telling the robot what data you are useing
+package Boneyard; //    this is telling the robot what data you are useing
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -9,7 +10,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 // gives the robot info on your stuff ;)
 
 @TeleOp
-
+@Disabled
 public class AntonioSixWheelArm extends LinearOpMode {
     private DcMotor leftMotor;
     private DigitalChannel digitalTouch;

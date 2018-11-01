@@ -75,10 +75,10 @@ public class HardwareLeighBot
 //    public Orientation    angles;
 
     public static final double MID_SERVO       =  0.5 ;
-    public static final double SAMPLER_STOWED       =  0.22 ;
-    public static final double SAMPLER_UP       =  0.5 ;
+    public static final double SAMPLER_STOWED       =  0.18; //0.22 ;
+    public static final double SAMPLER_UP       =  0.52 ;
     public static final double SAMPLER_READ      =  0.86;//0.82 ;
-    public static final double SAMPLER_PUSH      =  1; //0.88 ;
+    public static final double SAMPLER_PUSH      =  0.92; //0.88 ;
 
     public static final double     COUNTS_PER_MOTOR_REV    = 753.2 ;    // eg: TETRIX Motor Encoder
     public static final double     DRIVE_GEAR_REDUCTION    = 1.0 ;     // This is < 1.0 if geared UP
