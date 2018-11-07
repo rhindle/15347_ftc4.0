@@ -190,7 +190,7 @@ public class LeighBot_IMU_Sampler2 extends LinearOpMode {
 
         testForMinerals = false;
         exitFlag = false;
-        gyroDrive(DRIVE_SPEED, 21, 0);
+        gyroDrive(DRIVE_SPEED, 16.5, 0);  // was 21, subtract 4.5
         gyroTurn( TURN_SPEED,  90);
         gyroDrive(DRIVE_SPEED, -14, 90);  // was 9, but I measured wrong!
 //        sleep(5000);
