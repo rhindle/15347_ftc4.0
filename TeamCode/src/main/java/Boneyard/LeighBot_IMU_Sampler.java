@@ -36,7 +36,7 @@
 // LK: Final note - This code not re-tested yet after making lots of minor changes!
 //     I may have broken something.
 
-package org.firstinspires.ftc.teamcode;
+package Boneyard;
 
 import android.graphics.Color;
 
@@ -93,7 +93,7 @@ import java.util.Locale;
  */
 
 @Autonomous(name="Leighbot: IMU, sampler", group="Test")
-//@Disabled
+@Disabled
 public class LeighBot_IMU_Sampler extends LinearOpMode {
 
     /* Declare OpMode members. */

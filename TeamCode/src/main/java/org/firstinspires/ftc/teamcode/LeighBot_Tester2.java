@@ -2,14 +2,11 @@ package org.firstinspires.ftc.teamcode;
 
 import android.graphics.Color;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DigitalChannel;
-import com.qualcomm.robotcore.hardware.DistanceSensor;
-import com.qualcomm.robotcore.hardware.Gyroscope;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -20,9 +17,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import java.util.Locale;
 
 
-@TeleOp (name="Leighbot: Testing", group="Test")
+@TeleOp (name="Leighbot: Testing (A)", group="Test")
 //@Disabled
-public class LeighBot_Tester extends LinearOpMode {
+public class LeighBot_Tester2 extends LinearOpMode {
 //    private Gyroscope imu;
 //    private DcMotor motorTest;
 //    private DigitalChannel digitalTouch;
@@ -31,6 +28,7 @@ public class LeighBot_Tester extends LinearOpMode {
 
     HardwareLeighBot         robot   = new HardwareLeighBot();
     Orientation angles;
+    float   leftPower, rightPower, xValue, yValue;
 
     @Override
     public void runOpMode() {
@@ -101,6 +99,8 @@ public class LeighBot_Tester extends LinearOpMode {
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
 
+            /* Color Sensor Section */
+
             Color.RGBToHSV((int) (robot.sensorColor.red() * SCALE_FACTOR),
                     (int) (robot.sensorColor.green() * SCALE_FACTOR),
                     (int) (robot.sensorColor.blue() * SCALE_FACTOR),
@@ -120,26 +120,34 @@ public class LeighBot_Tester extends LinearOpMode {
                 telemetry.addData(">", "no match");
             }
 
+            /* Drive Section */
 
-            tgtPowerLeft = -this.gamepad1.left_stick_y;
-            tgtPowerRight = -this.gamepad1.right_stick_y;
+            yValue = -gamepad1.left_stick_y;   // throttle
+            xValue = -gamepad1.right_stick_x;  // steer
+
+            if (!gamepad1.right_bumper) {
+                if (yValue < 0) {              // mimic car steering wrt reversing
+                    xValue = -xValue;
+                }
+                xValue = xValue * Math.abs(yValue);  // make turn proportional to speed
+            }
+
+            leftPower =  yValue - xValue;
+            rightPower = yValue + xValue;
+
+            leftPower = Range.clip(leftPower,-1.0f,1.0f);
+            rightPower = Range.clip(rightPower, -1.0f, 1.0f);
+
+            if (!gamepad1.left_bumper) {   // left bumper is full speed, otherwise half.
+                leftPower =  leftPower / 2;
+                rightPower = rightPower / 2;
+            }
+
+            robot.leftDrive.setPower(leftPower);
+            robot.rightDrive.setPower(rightPower);
+
+            /*  Boom Section */
             tgtPowerBoom = this.gamepad1.right_trigger - this.gamepad1.left_trigger;
-
-
-            robot.leftDrive.setPower(tgtPowerLeft);
-            robot.rightDrive.setPower(tgtPowerRight);
-//
-//            if (robot.sensorBoom.getState() == true && robot.boomDrive.getCurrentPosition()>20 && tgtPowerBoom < 0) {
-//                robot.boomDrive.setPower(tgtPowerBoom);
-//            } else if (robot.sensorBoom.getState() == true && robot.boomDrive.getCurrentPosition()<1150 && tgtPowerBoom > 0) {
-//                robot.boomDrive.setPower(tgtPowerBoom);
-//            } else {
-//                robot.boomDrive.setPower(0);
-//            }
-//            if (robot.sensorBoom.getState() == false) {
-//                //robot.boomDrive.setPower(0);
-//                initBoom();
-//            }
 
             if (robot.sensorBoom.getState() == true && tgtPowerBoom < 0) {
                 robot.boomDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.FLOAT);
@@ -163,14 +171,10 @@ public class LeighBot_Tester extends LinearOpMode {
                 initBoom();
             }
 
-            telemetry.addData("Target Power L", tgtPowerLeft);
-//            telemetry.addData("Left Motor Power", leftMotor.getPower());
-//            telemetry.addData("Status", "Running");
-            telemetry.addData("Target Power R", tgtPowerRight);
-//            telemetry.addData("Right Motor Power", rightMotor.getPower());
-//            telemetry.addData("Status", "Running");
-//            telemetry.update();
-            telemetry.addData("Target Power B", tgtPowerBoom);
+
+            telemetry.addData("stick", "  y=" + yValue + "  x=" + xValue);
+            telemetry.addData("power", "  left=" + leftPower + "  right=" + rightPower);
+            telemetry.addData("Boom power", tgtPowerBoom);
             telemetry.addData("Boom encoder",robot.boomDrive.getCurrentPosition());
 
             // check to see if we nned to move the servo.
